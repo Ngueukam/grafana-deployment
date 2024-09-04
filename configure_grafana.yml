@@ -1,0 +1,36 @@
+---
+- name: Configure Grafana to run on port 8080 and change theme to white
+  hosts: grafana
+  become: true  # Ensure privilege escalation is used for modifying system files
+
+  tasks:
+    - name: Ensure Apache (httpd) is stopped
+      service:
+        name: httpd
+        state: stopped
+        enabled: false
+
+    - name: Modify Grafana configuration file to change port to 8080
+      lineinfile:
+        path: /etc/grafana/grafana.ini
+        regexp: '^;?http_port ='
+        line: 'http_port = 8080'
+        state: present
+        insertafter: '[server]'
+      notify: Restart Grafana
+
+    - name: Change Grafana theme to white
+      lineinfile:
+        path: /etc/grafana/grafana.ini
+        regexp: '^;?default_theme ='
+        line: 'default_theme = light'
+        state: present
+        insertafter: '[users]'
+      notify: Restart Grafana
+
+  handlers:
+    - name: Restart Grafana
+      service:
+        name: grafana-server
+        state: restarted
+

@@ -1,0 +1,50 @@
+# roles/grafana/tasks/main.yml
+---
+- name: Ensure Apache (httpd) is stopped
+  become: true
+  service:
+    name: httpd
+    state: stopped
+    enabled: false
+
+- name: Configure Grafana YUM repository
+  become: true
+  copy:
+    dest: /etc/yum.repos.d/grafana.repo
+    content: |
+      [grafana]
+      name=grafana
+      baseurl=https://packages.grafana.com/oss/rpm
+      repo_gpgcheck=1
+      enabled=1
+      gpgcheck=1
+      gpgkey=https://packages.grafana.com/gpg.key
+      sslverify=1
+      sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+
+- name: Install Grafana package
+  become: true
+  yum:
+    name: grafana
+    state: present
+
+- name: Modify Grafana configuration file to change port to 8080
+  become: true
+  lineinfile:
+    path: /etc/grafana/grafana.ini
+    regexp: '^;?http_port ='
+    line: 'http_port = 8080'
+    state: present
+    insertafter: '[server]'
+  notify: Restart Grafana
+
+- name: Change Grafana theme to white
+  become: true
+  lineinfile:
+    path: /etc/grafana/grafana.ini
+    regexp: '^;?default_theme ='
+    line: 'default_theme = light'
+    state: present
+    insertafter: '[users]'
+  notify: Restart Grafana
+
